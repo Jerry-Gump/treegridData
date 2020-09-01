@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>测试页</title>
+
+    <!-- jQuery 3 -->
+    <script src="/jquery/dist/jquery.js"></script>
+    <!-- Bootstrap 3.3.7 -->
+    <script src="/bootstrap/dist/js/bootstrap.min.js"></script>
+
+    <!-- Bootstrap 3.3.7 -->
+    <link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/font/css/font-awesome.min.css" />
+
+    <link rel="stylesheet" href="/bootstrap-datepicker/dist/css/bootstrap-datepicker3.min.css" />
+    <script type="text/javascript" src="/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+    <script type="text/javascript" src="/bootstrap-datepicker/js/locales/bootstrap-datepicker.zh-CN.js"></script>
+    <script type="text/javascript" src="/jquery-loadingView/loadingView.js"></script>
+    <script type="text/javascript" src="/bootstrap-paginator/zh-cs/paginator.js"></script>
+    <script type="text/javascript" src="/bootstrap-paginator/bootstrap-paginator.js"></script>
+    <script type="text/javascript" src="/bootstrap-treegrid/js/jquery.treegrid.min.js"></script>
+    <script type="text/javascript" src="/bootstrap-treegrid/treeGrid-extension.js"></script>
+    <script type="text/javascript" src="/bootstrap-dialog/draggable-dialog/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="/bootstrap-dialog/BootDialog.js"></script>
+    <link rel="stylesheet" href="/bootstrap-treegrid/css/jquery.treegrid.css" />
+    <link rel="stylesheet" href="/bootstrap-treegrid/treeGrid-extension.css" />
+    <link rel="stylesheet" href="/bootstrap-dialog/draggable-dialog/jquery-ui.min.css" />
+
+    <script type="text/javascript">
+        $(function () {
+            /*
+             更多设置属性请参考treeGrid-extension.js中的最后一段内容
+             */
+            $("#test_data").treegridData({
+                columns: [
+                    {
+                        "title": "序号",
+                        "field": "Index",
+                        "width": "45",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": true, // 自增长数字（树视图分级别如：1, 1.1）
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": false,
+                        "editable": false,
+                        "type": "",
+                        "align": "left",
+                        "style": null
+                    },
+                    {
+                        "title": "姓名",
+                        "field": "Name",
+                        "width": "110",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": false, 
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": true,
+                        "editable": true,
+                        "type": "text",
+                        "align": "left",
+                        "style": null
+                    },
+                    {
+                        "title": "生日",
+                        "field": "Birthday",
+                        "width": "110",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": false, 
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": true,
+                        "editable": true,
+                        "type": "date",
+                        "align": "left",
+                        "style": null
+                    },
+                    {
+                        "title": "年级",
+                        "field": "Grade",
+                        "width": "110",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": false, 
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": true,
+                        "editable": true,
+                        "type": "select",
+                        "datarange": "1^一年级,2^二年级,3^三年级,4^四年级,5^五年级,6^六年级",
+                        "align": "left",
+                        "style": null
+                    }
+                ],
+                data: [
+                    // Id必须设置，以识别editable修改的条目
+                    { Id: "1",Name: "张三", Birthday: "2009-10-1", Grade: 5 },
+                    { Id: "2",Name: "李四", Birthday: "2010-10-1", Grade: 4 },
+                    { Id: "3",Name: "王五", Birthday: "2011-9-1", Grade: 3 }
+                ],
+                id:"Id",
+                autoNext:false
+            });
+            $("#test_url").treegridData({
+                columns: [
+                    {
+                        "title": "序号",
+                        "field": "Index",
+                        "width": "45",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": true, // 自增长数字（树视图分级别如：1, 1.1）
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": false,
+                        "editable": false,
+                        "type": "",
+                        "align": "left",
+                        "style": null
+                    },
+                    {
+                        "title": "姓名",
+                        "field": "Name",
+                        "width": "110",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": false, 
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": true,
+                        "editable": true,
+                        "type": "text",
+                        "align": "left",
+                        "style": null
+                    },
+                    {
+                        "title": "生日",
+                        "field": "Birthday",
+                        "width": "110",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": false, 
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": true,
+                        "editable": true,
+                        "type": "date",
+                        "align": "left",
+                        "style": null
+                    },
+                    {
+                        "title": "年级",
+                        "field": "Grade",
+                        "width": "110",
+                        "placeHolder": null, // 当没有内容时显示的一个提示信息
+                        "autoincreament": false, 
+                        "templet": "",
+                        "toolbar": "",
+                        "sortable": true,
+                        "editable": true,
+                        "type": "select",
+                        "datarange": "1^一年级,2^二年级,3^三年级,4^四年级,5^五年级,6^六年级",
+                        "align": "left",
+                        "style": null
+                    }
+                ],
+                url: "/testurl.json",//固定的json返回数据，放弃了分页相关设置，如果有异常，设置retCode=1，具体信息通过message返回
+                editMode: "inline",
+                page: true,
+                pageSize: 5,
+                autoNext: false
+            });
+        });
+    </script>
+</head>
+<body>
+    <h3>使用data数据</h3>
+    <table id="test_data">
+
+    </table>
+    <div style="height:30px;"></div>
+    <h3>使用url动态读取数据</h3>
+    <table id="test_url">
+
+    </table>
+</body>
+</html>
