@@ -1,5 +1,5 @@
 ﻿/*
- * 版本0.9.0
+ * 版本1.0.0
  * http://www.legalsoft.com.cn
  * 北京联高软件开发有限公司
  * Licensed under the MIT licenses.
@@ -10,6 +10,7 @@
     var TreegridData = function (element, options) {
         this.$element = $(element);
         this.setting = options;
+        this.canClose = true;
         this.dataRangeCache = new Object();
         this._init();
     };
@@ -54,28 +55,9 @@
                 if ($(this).hasClass('sorted')) {
                     // 顺序颠倒
                     param.sortDesc = !target.setting.sortDesc;
-                    /*
-                    if (param.sortDesc) {
-                        if (!$(this).find('span.arrow').hasClass('up')) {
-                            $(this).find('span.arrow').addClass('up');
-                        }
-                    } else {
-                        $(this).find('span.arrow').removeClass('up');
-                    }*/
                 } else {
                     // 先去除原先的排序对象active类型，然后设置此对象active
                     param.sortDesc = target.setting.sortDesc;
-                    /*
-                    target.find('span.arrow').remove();
-                    $(this).append('<span class=\"arrow\"><span>');
-                    param.sortDesc = options.sortDesc;
-                    if (param.sortDesc) {
-                        if (!$(this).hasClass('desc')) {
-                            $(this).addClass('desc');
-                        }
-                    } else {
-                        $(this).removeClass('desc');
-                    }*/
                 }
                 // 其实这里是全部重建的，所以实际上不需要操作界面元素，只要改参数就行了
                 param.sortField = $(this).attr('data-field');
@@ -91,16 +73,17 @@
                 target.closeEdit(target);
                 var type = $(this).attr("data-type");
                 switch (type) {
-                    case "text":
-                    case "int":
-                    case "float":
-                        target.textEditable($(this));
-                        break;
                     case "select":
                         target.selectEditable($(this));
                         break;
                     case "date":
                         target.dateEditable($(this));
+                    case "text":
+                    case "int":
+                    case "float":
+                    default:
+                        target.textEditable($(this));
+                        break;
                 }
             });
 
@@ -117,11 +100,42 @@
                 var type = $(this).closest("form.editableform").attr("data-type");
                 if (type === "float") {
                     // 检查是否浮点数
+                    if (!obj.value.isFloat()) {
+                        var errMsg = "请输入浮点数";
+                        if ($.isFunction(jBootAlert)) {
+                            jBootAlert(errMsg);
+                        } else {
+                            alert(errMsg);
+                        }
+                        target.setting.canClose = false;
+                        return;
+                    }
                 } else if (type === "int") {
                     // 是否整数
+                    if (!obj.value.isInt()) {
+                        var errMsg = "请输入整数";
+                        if ($.isFunction(jBootAlert)) {
+                            jBootAlert(errMsg);
+                        } else {
+                            alert(errMsg);
+                        }
+                        target.setting.canClose = false;
+                        return;
+                    }
                 } else if (type === "date") {
                     // 日期
+                    if (!obj.value.isDate()) {
+                        var errMsg = "请输入日期";
+                        if ($.isFunction(jBootAlert)) {
+                            jBootAlert(errMsg);
+                        } else {
+                            alert(errMsg);
+                        }
+                        target.setting.canClose = false;
+                        return;
+                    }
                 }
+                target.setting.canClose = true;
 
                 obj.data = $(this).parents('tr').data('node');
                 if (obj.data) {
@@ -165,13 +179,6 @@
                         }
                     }
                 }
-                /*直接从原始数据查找更快速
-                var datacols = target.getDataColumn();
-                $.each(datacols, function (i, c) {
-                    if (c.field === obj.field) {
-                        column = c;
-                    }
-                });*/
                 var txt = target.editItemHtml(obj.data, column);
                 $(this).closest("td").html(txt);
                 if (target.setting.autoNext) {
@@ -197,7 +204,10 @@
                 if ($(event.target).closest(".editable-container").length > 0) {
                     return;
                 }
-                if (target.setting.autoClose && target.$element.find(".editable-container").length > 0) {
+                if (target.setting.canClose === false) {
+                    target.setting.canClose = true;
+                }
+                else if (target.setting.autoClose && target.$element.find(".editable-container").length > 0) {
                     // 把其他的编辑内容干掉
                     target.closeEdit(target);
                     event.stopPropagation();
@@ -336,12 +346,16 @@
                 }
             }
             otl += " return html;";
+            console.log(otl);
             var html = eval("function t(){" + otl + "} t();");
             return html;
         },
         createItem: function (item, column, data_idx, tr_autoinc) {
             var $this = this;
             var td = $('<td></td>');
+            if (typeof (this.setting.valign) === "string" && this.setting.valign.length > 0) {
+                td.css("vertical-align", this.setting.valign);
+            }
             // 按照autoincreament->templet->toolbar->field优先级处理
             // 可编辑数据只能是简单对象，不能是autoincreament、templet和toolbar
             if (column.autoincreament) {
@@ -508,6 +522,13 @@
         },
         editItemHtml: function (item, column) {
             var txt = item[column.field] || column.placeHolder || "";
+            if (column.type === "radio") {
+                txt = "<input type='radio' style='margin-top:-3px;' id='rdo_" + item[this.setting.id] + "' class='tg-check-type' name='check_radio' value='" + item[this.setting.id] +"' />";
+                return txt;
+            } else if (column.type === "checkbox") {
+                txt = "<input type='checkbox' id='ckb_" + item[this.setting.id] + "' class='tg-check-type' name='check_radio' value='" + item[this.setting.id] +"' />";
+                return txt;
+            }
 
             var d = item[column.field] || "";
             if (column.type === "select") {
@@ -521,25 +542,55 @@
                     }
                 }
             }
-            if (column.editable) {
-                // 可编辑，如果内容是空，则必须显示一个可输入的占位内容
-                if (txt === "") {
-                    txt = this.setting.editInfo[column.type] || "<span style='color:red;'>Empty</span>";
+            else if (column.type === "date" || column.type === "datetime" || column.type === "time") {
+                // 只输出日期部分，隐去时间
+                txt = this.timeStamp2String(new Date(txt), column.type);
+            } 
+            if (item.editable !== false) {
+                if (column.editable) {
+                    // 可编辑，如果内容是空，则必须显示一个可输入的占位内容
+                    if (txt === "") {
+                        txt = this.setting.editInfo[column.type] || "<span style='color:red;'>Empty</span>";
+                    }
+                    txt = "<input type='hidden' name='" + column.field + "_" + item[this.setting.id] + "' value='" + d + "' /><a href='javascript:void(0);' id='a_" + column.field + "_" + item[this.setting.id] + "' class='editable' data-title='" + column.title + "' data-field='" + column.field + "' data-type='" + column.type + "' data-value='" + d + "' data-range='" + column.datarange + "'>" + txt + "</a>";
+                    //target.data("tabIdx", tabIdx);
                 }
-                txt = "<input type='hidden' name='" + column.field + "_" + item[this.setting.id] + "' value='" + d + "' /><a href='javascript:void(0);' id='a_" + column.field + "_" + item[this.setting.id]+"' class='editable' data-title='" + column.title + "' data-field='" + column.field + "' data-type='" + column.type + "' data-value='" + d + "' data-range='" + column.datarange + "'>" + txt + "</a>";
-                //target.data("tabIdx", tabIdx);
             }
             return txt;
         },
+        timeStamp2String : function (time, format){
+            var datetime = new Date();
+            datetime.setTime(time);
+            var year = datetime.getFullYear();
+            var month = datetime.getMonth() + 1 < 10 ? "0" + (datetime.getMonth() + 1) : datetime.getMonth() + 1;
+            var date = datetime.getDate() < 10 ? "0" + datetime.getDate() : datetime.getDate();
+            var hour = datetime.getHours() < 10 ? "0" + datetime.getHours() : datetime.getHours();
+            var minute = datetime.getMinutes() < 10 ? "0" + datetime.getMinutes() : datetime.getMinutes();
+            var second = datetime.getSeconds() < 10 ? "0" + datetime.getSeconds() : datetime.getSeconds();
+            if (format === "date") {
+                return year + "-" + month + "-" + date;
+            } else if (format === "datetime") {
+                return year + "-" + month + "-" + date + " " + hour + ":" + minute + ":" + second;
+            } else if (format === "time") {
+                return hour + ":" + minute + ":" + second;
+            }
+            return "";
+        },
         createHeadLine: function (row, thr) {
             var $this = this;
+            var cIdx = 0;
+            var treeColumn = 0;
             $.each(row, function (i, item) {
+                if (item.field === $this.setting.expendColumn) {
+                    treeColumn = cIdx;
+                }
                 var th = $('<th style="vertical-align:middle;"></th>');
                 if (item.width) {
                     th.css("width", item.width);
                 }
                 if (typeof item.colspan === "number") {
                     th.attr("colspan", item.colspan);
+                    cIdx += item.colspan;
                 }
                 if (typeof item.rowspan === "number") {
                     th.attr("rowspan", item.rowspan);
@@ -571,6 +622,7 @@
                 }
                 thr.append(th);
             });
+            this.setting.treeColumn = treeColumn;
         },
         createTable: function (data, message) {
             // 先清空内容
@@ -634,11 +686,12 @@
                 tbody.append(noData);
             }
             this.$element.append(tbody);
-            this.$element.treegrid(this.setting);
-            if (!this.setting.expandAll) {
-                this.$element.treegrid('collapseAll');
+            if (this.setting.treeView) {
+                this.$element.treegrid(this.setting);
+                if (!this.setting.expandAll) {
+                    this.$element.treegrid('collapseAll');
+                }
             }
-
             this.$element.css("margin-bottom", "0px");
         },
         getDataColumn: function () {
@@ -716,7 +769,7 @@
             var $this = this;
             var pageCtrl = $this.$element.next(".page");
             if (!pageCtrl || pageCtrl.length === 0) {
-                pageCtrl = $("<div class='page'><ul class=\"pagination pull-right\" style=\"margin:4px 0px 0px 0px;\"></ul></div>");
+                pageCtrl = $("<div class='page'><ul class=\"pagination pull-right\" style=\"margin:4px 0px 0px 3px;\"></ul></div>");
                 $this.$element.after(pageCtrl);
             }
             var paginator_options = {
@@ -748,7 +801,12 @@
         },
         updateNode: function (nodeData) {
             var $this = this;
-            var tr = $this.$element.find('#node_' + nodeData[$this.setting.id]);
+            var tr = null;
+            if (typeof (nodeData) === "number") {
+                // 输入的是序号
+                nodeData = $this.setting.data[nodeData];
+            }
+            tr = $this.$element.find('#node_' + nodeData[$this.setting.id]);
             if (tr) {
                 // 找到对象，更新里面的内容
                 var datacols = this.getDataColumn();
@@ -842,15 +900,16 @@
         sortBy: function (param) {
             // param.sortField, param.sortDesc
             if (typeof (param.sortField) === 'string') {
+                var p = new Object();
                 if (this.setting.sortField === param.sortField) {
-                    this.setting.sortDesc = !this.setting.sortDesc;
+                    p.sortDesc = !this.setting.sortDesc;
                 } else {
-                    this.setting.sortField = param.sortField;
-                    this.setting.sortDesc = false;
+                    p.sortField = param.sortField;
+                    p.sortDesc = false;
                 }
-                this.setting.pageIndex = 1;
+                p.pageIndex = 1;
 
-                this.$element.treegridData('reload', this.setting);
+                this.$element.treegridData('reload', p);
             }
         },
         pageTo: function (param) {
@@ -858,8 +917,9 @@
             if ($.isNumeric(param) && this.setting.page) {
                 var pgIdx = parseInt(param);
                 if (pgIdx > 0) {
-                    this.setting.pageIndex = pgIdx;
-                    this.$element.treegridData('reload', this.setting);
+                    var p = new Object();
+                    p.pageIndex = pgIdx;
+                    this.$element.treegridData('reload', p);
                 }
             }
         },
@@ -867,6 +927,14 @@
             // param.sortField, param.sortDesc, param.pageIndex, param.pageSize
             // 实际上此处支持对所有的options的修改，param的格式参考defaults
             // 更新表格设置
+            if (param) {
+                if (param["data"]) {
+                    this.setting.data = [];
+                }
+                if (param["columns"]) {
+                    this.setting.columns = [];
+                }
+            }
             $.extend(true, this.setting, param || {});
             // 给table和paginator加一个外包div容器
             if (this.$element.parent(".treegrid-container").length === 0) {
@@ -874,7 +942,7 @@
                 this.$element.before(container);
                 container.append(this.$element);
             }
-            if (this.setting.url) {
+            if (typeof(this.setting.url) === "string" && this.setting.url !== "null" && this.setting.url.length > 0) {
                 var ajaxP = this.setting.ajaxParams;
                 if (typeof (this.setting.sortField) === "string" && typeof (this.setting.sortKey) === "string") {
                     ajaxP[this.setting.sortKey] = this.setting.sortField;
@@ -903,8 +971,18 @@
                     success: function (data, textStatus, jqXHR) {
                         //debugger;
                         // 这里的data采用通用结构,data.retCode=0,data.message,data.datas
-                        if (data.retCode === 0) {
+                        if (typeof($this.setting.dataName) === "string") {
+                            data.datas = data[$this.setting.dataName];
+                        }
+                        if (data.retCode === 0 && $.isArray(data.datas)) {
                             $this.setting.data = data.datas;
+                            // 对data.id进行判断，如果没有相应的id，则用序号作为id的值
+                            for (var k = 0; k < $this.setting.data.length; k++) {
+                                if (!$this.setting.data[$this.setting.id]) {
+                                    $this.setting.data[$this.setting.id] = k;
+                                }
+                            }
+                            $this.createTable(data.datas, $this.setting.emptyMessage);
                             var pageChange = false;
                             if (typeof (data.pageIndex) === "number") {
                                 if ($this.setting.pageIndex !== data.pageIndex) {
@@ -921,7 +999,9 @@
                                     $this.setting.pageCount = data.pageCount;
                                 }
                             }
-                            $this.createTable(data.datas, $this.setting.emptyMessage);
+                            if (typeof (data.rowCount) === "number") {
+                                $this.setting.rowCount = data.rowCount;
+                            }
                             // paginator并不需要每次都重建，所以这里加了pageChange的设定
                             if ($this.setting.page && pageChange) {
                                 $this.createPaginator();
@@ -953,6 +1033,11 @@
                 this.$element.parent(".treegrid-container").loadingView("show");
                 // 对this.setting.data进行排序
                 if ($.isArray(this.setting.data)) {
+                    for (var k = 0; k < this.setting.data.length; k++) {
+                        if (!this.setting.data[this.setting.id]) {
+                            this.setting.data[this.setting.id] = k;
+                        }
+                    }
                     var sk, desc;
                     if (typeof (this.setting.sortField) === "string") {
                         sk = this.setting.sortField;
@@ -1005,6 +1090,7 @@
                         pageChange = true;
                         this.setting.pageIndex = this.setting.pageCount;
                     }
+                    this.setting.rowCount = this.setting.data.length;
                     //url 方式的分页是服务器端实现的，那边给什么数据这里就显示什么
                     //data 方式需要自己分页，分页只计算根节点的数量，所以这里取得的条数和总数量是有可能存在差距的
                     var c = 0;
@@ -1030,6 +1116,30 @@
                 }
                 this.$element.parent(".treegrid-container").loadingView("hide");
             }
+        },
+        getChecked: function (params) {
+            var cks = this.$element.find("input.tg-check-type:checked");
+            var idName = this.setting.id;
+            var result = new Array();
+            var $this = this;
+            cks.each(function (i, e) {
+                for (var j = 0; j < $this.setting.data.length; j++) {
+                    if ($this.setting.data[j][idName] == $(e).val()) {
+                        var obj = new Object();
+                        obj.id = $(e).val();
+                        obj.data = $this.setting.data[j];
+                        result.push(obj);
+                    }
+                }
+            });
+            return result;
+        },
+        getCount: function (params) {
+            if (this.setting.data.length > this.setting.rowCount) {
+                return this.setting.data.length;
+            } else {
+                return this.setting.rowCount;
+            }
         }
     };
 
@@ -1054,11 +1164,12 @@
 
     $.fn.treegridData.defaults = {
         // no data message
-        emptyMessage: "未找到数据",
+        emptyMessage: "未找到数据", // 无数据情况下的显示，避免没有数据时不知是出错还是无数据
         // tree
-        id: 'Id',
-        parentColumn: 'ParentId',
-        expandColumn: null,//在哪一列上面显示展开按钮
+        id: 'Id', // 很重要，用于区分每行数据，识别，操作（removeNodeById）等
+        parentColumn: 'ParentId', // 树表格状态下表达父节点的field
+        treeView: false,
+        expendColumn: null,//在哪一列上面显示展开按钮，列field, 会被转换为treeColumn(int)用于treegrid使用
         expandAll: true,  //是否全部展开
         expanderExpandedClass: 'icon-caret-down',//展开的按钮的图标
         expanderCollapsedClass: 'icon-caret-right',//缩起的按钮的图标 
@@ -1072,13 +1183,16 @@
         pageIndex: 1,
         pageSize: 12,
         pageCount: 0,
-        paginator: {},
+        rowCount:0,		// 总数据条目，在url并且分页的情况下，data里面的length并不等于总数据条目，所以需要ajax返回rowCount并记录
+        paginator: {}, // 分页组件的参数，可定义分页的风格与属性，具体设置规则参考分页组件
         // data
         data: [],    //构造table的数据集合
         type: "GET", //请求数据的ajax类型
-        url: null,   //请求数据的ajax的url
+        url: null,   //请求数据的ajax的url，url有优先，有url的情况下，忽略data
         ajaxParams: {}, //请求数据的ajax的data属性
+        dataName: null, // 返回值里面如果数据数组不是使用datas，那么就用这个来指定json的变量名
         // table
+        valign: "middle",// 数据格子td中的垂直对齐方式
         titleStyle: {},// 标题栏的style
         striped: true,   //是否各行渐变色
         bordered: true,  //是否显示边框
@@ -1095,7 +1209,8 @@
                 "editable": false,
                 "type": "",
                 "align": "left",
-                "style": null
+                "style": null,
+				"placeHolder": ""// 可编辑对象在数据为空值时显示的占位内容，如果没有，则使用统一的占位内容
               },
               {
                 "title": "位置",
@@ -1111,7 +1226,7 @@
               }
              */
         ],
-        // 事件监听和options.onEvent是互斥的，options.onEvent优先
+        // 事件监听和options.onEvent是互斥的，options.onEvent优先，几个on参数对象应该是function
         // toolBar事务处理，另一种实现是通过event:tool-action，参数:target,obj(obj.event,obj.data,obj.id)
         onActionEvent: null,
         // editable
@@ -1124,6 +1239,6 @@
             select: "请选择",
             date: "yyyy-MM-dd"
         },
-        editMode: "popup"//inline
+        editMode: "popup"// 可选popup, inline
     };
 })(jQuery);
